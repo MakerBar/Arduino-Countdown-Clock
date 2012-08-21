@@ -28,7 +28,7 @@ volatile boolean abortCurrentState = false;
 byte state = STATE_ATTRACTMODE;
 
 unsigned long benchmarkTime;
-unsigned long currentTime;
+unsigned long stateTime;
 
 void setup() {
   // This is a hacky technique to use a digital input (button) without using an external pullup resistor.
@@ -44,8 +44,6 @@ void setup() {
 }
 
 void loop() {
-  currentTime = millis();
-
   switch (state)
   {
   case STATE_ATTRACTMODE:
@@ -69,6 +67,7 @@ void loop() {
       if (abortCurrentState) {
         LedSign::Clear();
         state = STATE_SPEAKING;
+        stateTime = millis();
         abortCurrentState = false;
       }
       break;
@@ -80,39 +79,72 @@ void loop() {
       int len = 44;
       char text[] = "PRESENTATION TIME!   5 MINS!   READY SET GO!";
       int x=0,x2=0;
-      for(int j=13;j>-225;j--) {
+      for(int j=13; j > -225; j--) {
         if (abortCurrentState) break;
         x=j;
         LedSign::Clear();
-        for(int i=0;i<len;i++) {
+        for(int i=0;i < len;i++) {
           if (abortCurrentState) break;
           x2=Font::Draw(text[i],x,-1);
-          x+=x2;
-          if (x>=13) break;
+          x += x2;
+          if (x >= 13) break;
         }  
         if (!abortCurrentState) delay(100);
       }
       
       /* Count down with 10 LED's */
+      // initialize bottom row of leds on
       for (int led = 0; led < 14; led++) {
         if (abortCurrentState) break;
         LedSign::Set(led, COUNTDOWN_ROW);
       }
+      
+      int leds = 14;
+      char lolchars = '\0';
+      
+      while ((millis() - stateTime) < (5 * 60 * 1000)) {
+        if (abortCurrentState) break;
+        
+        int time = (millis() - stateTime) / 1000;
+        int timeRemaining = (5*60) - time;
+        // calculate state of bottom row of leds
+        if (timeRemaining >= 60) { // more than a minute left
+          leds = 6;
+          leds += (timeRemaining - 60) / 30;
+        } else {
+          leds = timeRemaining / 30;
+        }
+        
+        // display bottom row of leds
+        for (int i = 0; i < 14; i++) {
+          if (i > leds) {
+            LedSign::Set(13 - i, COUNTDOWN_ROW, 0);
+          }
+        }
+      }
+      
+      /*
+      // start turning off bottom row of leds
       for (int i = 0; i < 8; i++) {
         if (abortCurrentState) break;
+        
+        // draw the character on the lolshield
         if (i > 0) Font::Draw((5 - ((i - 1) / 2) + 48), 5, -1, 0); // Erase the last character by drawing it in "black".
-        Font::Draw((5 - i / 2) + 48, // The ASCII char for '0' is 48. Therefore, we add 48 to the current number of minutes left to get the char to draw. 
-                   5, -1);
+        // The ASCII char for '0' is 48. Therefore, we add 48 to the current number of minutes left to get the char to draw.
+        Font::Draw((5 - i / 2) + 48, 5, -1);
         
         if (abortCurrentState) break;
-        for (unsigned int j = 0; j < (SPEAKING_TIME - 60000) / 80; j++) if (!abortCurrentState) delay(10);
+        for (unsigned int j = 0; j < (SPEAKING_TIME - 60000) / 80; j++)
+          if (!abortCurrentState)
+            delay(10);
         
+        // update bottom row leds
         LedSign::Set(i, COUNTDOWN_ROW, 0);
       }
 
       Font::Draw('2', 5, -1, 0); // Erase that pesky '2' left after that countdown
 
-      /* Last minute countdown */
+      // Last minute countdown
       for (int i = 8; i <= 13; i++) {
         for (int j = 0; j < 10; j++) {
           if (abortCurrentState) break;
@@ -131,9 +163,9 @@ void loop() {
         }
         LedSign::Set(i, COUNTDOWN_ROW, 0);
       }
+*/
 
       LedSign::Clear();
-
       /* Blink '00' a few times for effect' */
       for (int i = 0; i < 5; i++)
       {
@@ -178,6 +210,7 @@ void loop() {
       if (abortCurrentState) {
         LedSign::Clear();
         state = STATE_ATTRACTMODE;
+        stateTime = millis();
         abortCurrentState = false;
       }
       break;
