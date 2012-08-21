@@ -190,32 +190,62 @@ void loop() {
         if (!abortCurrentState) delay(100);
       }
       
-      // initialize bottom row of leds on for countdown
-      for (int led = 0; led < 14; led++) {
-        if (abortCurrentState) break;
-        LedSign::Set(led, COUNTDOWN_ROW);
-      }
-      
       int leds;
+      int time = 0;
+      int timeRemaining = 300;
+      char newChar, newChar1, newChar2;
+      char oldChar = '0'; // has to be something Font::Draw can erase the first time round
+      char oldChar1 = '7';
+      char oldChar2 = '0';
       
-      while ((millis() - stateTime) < (5 * 60 * 1000)) {
+      while (timeRemaining > 0) {
         if (abortCurrentState) break;
         
         // calculate timeRemaining
-        int time = (millis() - stateTime) / 1000;
-        int timeRemaining = (5*60) - time;
+        time = (millis() - stateTime) / 1000;
+        timeRemaining = (5*60) - time;
         
-        // calculate state of bottom row of leds
+        // calculate state of bottom row of leds and display numbers on lolshield
         if (timeRemaining >= 60) { // more than a minute left
           leds = 6;
           leds += (timeRemaining - 60) / 30;
+          
+          // draw remaining minutes on lolshield
+          newChar = (timeRemaining / 60) + '0' + 1;
+          if (newChar != oldChar) {
+            Font::Draw(oldChar, 5, -1, 0); // turn off oldChar
+            Font::Draw(newChar, 5, -1);
+            oldChar = newChar;
+          }
         } else {
+          // less than 1 min left
           leds = timeRemaining / 10;
+          
+          // draw remaining seconds on lolshield
+          if (oldChar1 == 7) {
+            // first time through (can't have 70 seconds in a minute)
+            // erase '1' from last round
+            Font::Draw(oldChar, 5, -1, 0);
+          }
+          newChar1 = ((timeRemaining % 60) / 10) + '0';
+          newChar2 = (timeRemaining % 10) + '0';
+          if ((newChar2 != oldChar2) || (newChar1 != oldChar1)) {
+            // erase old charaters
+            int offset = Font::Draw(oldChar1, 2, -1, 0);
+            Font::Draw(oldChar2, 2 + offset, -1, 0);
+            // draw new chars
+            offset = Font::Draw(newChar1, 2, -1);
+            Font::Draw(newChar2, offset + 2, -1);
+            oldChar1 = newChar1;
+            oldChar2 = newChar2;
+          }
         }
         
         // display bottom row of leds
         for (int i = 0; i < 14; i++) {
-          if (i > leds) {
+          if (i <= leds) {
+            LedSign::Set(13 - i, COUNTDOWN_ROW, 1);
+          } else {
             LedSign::Set(13 - i, COUNTDOWN_ROW, 0);
           }
         }
@@ -231,50 +261,7 @@ void loop() {
         }
         segReset(); // ensure the 7 seg is fully off
         delayMicroseconds(500); // keep it off for 1 ms
-        
-      }
-      
-      /*
-      // start turning off bottom row of leds
-      for (int i = 0; i < 8; i++) {
-        if (abortCurrentState) break;
-        
-        // draw the character on the lolshield
-        if (i > 0) Font::Draw((5 - ((i - 1) / 2) + 48), 5, -1, 0); // Erase the last character by drawing it in "black".
-        // The ASCII char for '0' is 48. Therefore, we add 48 to the current number of minutes left to get the char to draw.
-        Font::Draw((5 - i / 2) + 48, 5, -1);
-        
-        if (abortCurrentState) break;
-        for (unsigned int j = 0; j < (SPEAKING_TIME - 60000) / 80; j++)
-          if (!abortCurrentState)
-            delay(10);
-        
-        // update bottom row leds
-        LedSign::Set(i, COUNTDOWN_ROW, 0);
-      }
-
-      Font::Draw('2', 5, -1, 0); // Erase that pesky '2' left after that countdown
-
-      // Last minute countdown
-      for (int i = 8; i <= 13; i++) {
-        for (int j = 0; j < 10; j++) {
-          if (abortCurrentState) break;
-          byte seconds = 60 - ((i - 8) * 10) - j;
-          byte x2;
-
-          if (seconds != 60) {
-            x2 = Font::Draw((seconds + 1) / 10 + 48, 2, -1, 0);
-            Font::Draw(((seconds + 1) % 10) + 48, 2 + x2, -1, 0);
-          }
-
-          x2 = Font::Draw(seconds / 10 + 48, 2, -1);
-          Font::Draw((seconds % 10) + 48, 2 + x2, -1);
-          if (abortCurrentState) break;
-          delay(1000);
-        }
-        LedSign::Set(i, COUNTDOWN_ROW, 0);
-      }
-*/
+      } // end timing loop
 
       LedSign::Clear();
       /* Blink '00' a few times for effect' */
