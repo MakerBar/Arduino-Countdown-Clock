@@ -23,6 +23,98 @@ volatile boolean abortCurrentState = false;
 
 //int stringOffset = 13; // Remember to reset to 13 instead of 0 so strings start from the right
 
+//////////////////////////////////////////////////////////////////
+// 7 segment display code, should be moved to a library eventually
+
+int digitPin = 22;
+int segmentPin = 26;
+int dotsPin = 33;
+
+int digits[10][7] = {
+  {1,1,1,1,1,1,0}, // 0
+  {0,1,1,0,0,0,0}, // 1
+  {1,1,0,1,1,0,1}, // 2
+  {1,1,1,1,0,0,1}, // 3
+  {0,1,1,0,0,1,1}, // 4
+  {1,0,1,1,0,1,1}, // 5
+  {0,0,1,1,1,1,1}, // 6
+  {1,1,1,0,0,0,0}, // 7
+  {1,1,1,1,1,1,1}, // 8
+  {1,1,1,0,0,1,1}  // 9
+};
+
+void segInitialize() {
+  for (int i = digitPin; i < digitPin + 4; i++) {
+    pinMode(i, OUTPUT);
+  }
+  for (int i = segmentPin; i < segmentPin + 7; i++) {
+    pinMode(i, OUTPUT);
+  }
+  pinMode(dotsPin, OUTPUT);
+  segReset();
+}
+
+void segReset() {
+  // set all digits off (LOW)
+  for (int p = digitPin; p < digitPin + 4; p++) {
+    digitalWrite(p, LOW);
+  }
+  
+  // set all segments off (HIGH)
+  for (int p = segmentPin; p < segmentPin + 7; p++) {
+    digitalWrite(p, HIGH);
+  }
+  
+  // set all dots off (HIGH)
+  digitalWrite(dotsPin, HIGH);
+}
+
+void fail() {
+  // something is bad, turn off every pin, and infinite loop
+  segReset();
+  while(1) {
+    delay(1000);
+  }
+}
+
+void lightSeg(int digit, int segment) {
+  if ((digit < 1) || (digit > 4) || (segment < 0) || (segment > 6)) {
+    fail();
+  }
+  int digPin = digit - 1 + digitPin; // digits are 1-indexed, so subtract 1
+  int segPin = segment + segmentPin; // segments are 0 indexed
+  digitalWrite(digPin, HIGH);
+  digitalWrite(segPin, LOW);
+  digitalWrite(digPin, LOW);
+  digitalWrite(segPin, HIGH);
+}
+
+void lightDig (int digit, int numeral) {
+  // digit is which set of segments you want to light up
+  // numeral is the number you want to display on those segments
+  if ((digit > 4) || (numeral > 9)) {
+    fail();
+  }
+  for (int seg = 0; seg < 7; seg++) {
+    if (digits[numeral][seg]) {
+      lightSeg(digit, seg);
+    }
+  }
+}
+
+void flashDots() {
+  // have to make sure only one dot is on a time to ensure brightness is the same
+  digitalWrite(dotsPin, LOW);
+  digitalWrite(digitPin + 1, HIGH);
+  digitalWrite(digitPin + 1, LOW);
+  digitalWrite(digitPin + 2, HIGH);
+  digitalWrite(digitPin + 2, LOW);
+  digitalWrite(dotsPin, HIGH);
+}
+
+// end 7 segment display code
+///////////////////////////////////////////////////////////////////
+
 byte state = STATE_ATTRACTMODE;
 
 unsigned long benchmarkTime;
@@ -39,6 +131,8 @@ void setup() {
   LedSign::Init();  //Initializes the screen
 
   benchmarkTime = millis();
+  
+  segInitialize();
 }
 
 void loop() {
@@ -73,6 +167,12 @@ void loop() {
 
   case STATE_SPEAKING:
     {
+      // put 5 mins on the clock!
+      lightDig(2, 5);
+      lightDig(3, 0);
+      lightDig(4, 0);
+      segReset();
+      
       /* Lead in */
       int len = 44;
       char text[] = "PRESENTATION TIME!   5 MINS!   READY SET GO!";
@@ -96,20 +196,21 @@ void loop() {
         LedSign::Set(led, COUNTDOWN_ROW);
       }
       
-      int leds = 14;
-      char lolchars = '\0';
+      int leds;
       
       while ((millis() - stateTime) < (5 * 60 * 1000)) {
         if (abortCurrentState) break;
         
+        // calculate timeRemaining
         int time = (millis() - stateTime) / 1000;
         int timeRemaining = (5*60) - time;
+        
         // calculate state of bottom row of leds
         if (timeRemaining >= 60) { // more than a minute left
           leds = 6;
           leds += (timeRemaining - 60) / 30;
         } else {
-          leds = timeRemaining / 30;
+          leds = timeRemaining / 10;
         }
         
         // display bottom row of leds
@@ -118,6 +219,19 @@ void loop() {
             LedSign::Set(13 - i, COUNTDOWN_ROW, 0);
           }
         }
+        
+        // update 7 segment display
+        // we never use digit 1, since we're only running for 5 mins
+        lightDig(2, timeRemaining / 60);
+        lightDig(3, (timeRemaining % 60) / 10);
+        lightDig(4, timeRemaining % 10);
+        // blink the dots between digits every other second
+        if ((millis() % 2000) > 1000) {
+          flashDots();
+        }
+        segReset(); // ensure the 7 seg is fully off
+        delayMicroseconds(500); // keep it off for 1 ms
+        
       }
       
       /*
