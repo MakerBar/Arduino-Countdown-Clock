@@ -269,10 +269,17 @@ void loop() {
       {
         if (abortCurrentState) break;
 
-        Font::Draw('0', 2, -1);
-        Font::Draw('0', 8, -1);
+        Font::Draw('0', 2, 0);
+        Font::Draw('0', 8, 0);
 
-        delay(500);
+        for (int i = 0; i < 500; i++) {
+          lightDig(1, 0);
+          lightDig(2, 0);
+          lightDig(3, 0);
+          lightDig(4, 0);
+          segReset();
+          delay(1);
+        }
 
         LedSign::Clear();
         if (abortCurrentState) break;
