@@ -174,10 +174,10 @@ void loop() {
       segReset();
       
       /* Lead in */
-      int len = 44;
-      char text[] = "PRESENTATION TIME!   5 MINS!   READY SET GO!";
+      int len = 11;
+      char text[] = "5 MINS  GO!";
       int x=0,x2=0;
-      for(int j=13; j > -225; j--) {
+      for(int j=13; j > -55; j--) {
         if (abortCurrentState) break;
         x=j;
         LedSign::Clear();
