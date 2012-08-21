@@ -289,10 +289,10 @@ void loop() {
 
       /* Time's up! */
       do {
-        int len = 40;
-        char text[] = "TIME UP!   ARMING TRAP DOOR!      LOL JK";
+        int len = 11;
+        char text[] = "TIME UP!   ";
         int x=0,x2=0;
-        for(int j=13;j>-200;j--) {
+        for(int j=13;j>-50;j--) {
           if (abortCurrentState) break;
           x=j;
           LedSign::Clear();
