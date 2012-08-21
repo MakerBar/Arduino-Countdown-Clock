@@ -9,8 +9,6 @@
 #include "Charliplexing.h"
 #include "Font.h"
 
-// TODO: Replace delays with displaying on LED's
-
 // TODO: Put this in PROGMEM
 static char attractString[] = "NJ TECH MEETUP   HOBOKEN MAKERBAR   ";
 static int attractStringLength = 36;
@@ -57,7 +55,7 @@ void loop() {
         LedSign::Clear();
         for(int i=0;i<len;i++) {
           if (abortCurrentState) break;
-          x2=Font::Draw(text[i],x,-1);
+          x2=Font::Draw(text[i],x,0);
           x+=x2;
           if (x>=13) break;
         }
@@ -85,15 +83,14 @@ void loop() {
         LedSign::Clear();
         for(int i=0;i < len;i++) {
           if (abortCurrentState) break;
-          x2=Font::Draw(text[i],x,-1);
+          x2=Font::Draw(text[i],x,0);
           x += x2;
           if (x >= 13) break;
         }  
         if (!abortCurrentState) delay(100);
       }
       
-      /* Count down with 10 LED's */
-      // initialize bottom row of leds on
+      // initialize bottom row of leds on for countdown
       for (int led = 0; led < 14; led++) {
         if (abortCurrentState) break;
         LedSign::Set(led, COUNTDOWN_ROW);
@@ -193,7 +190,7 @@ void loop() {
           LedSign::Clear();
           for(int i=0;i<len;i++) {
             if (abortCurrentState) break;
-            x2=Font::Draw(text[i],x,-1);
+            x2=Font::Draw(text[i],x,0);
             x+=x2;
             if (x>=13) break;
           }
