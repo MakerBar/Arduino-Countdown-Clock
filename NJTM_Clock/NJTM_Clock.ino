@@ -222,7 +222,7 @@ void loop() {
           leds = timeRemaining / 10;
           
           // draw remaining seconds on lolshield
-          if (oldChar1 == 7) {
+          if (oldChar1 == '7') {
             // first time through (can't have 70 seconds in a minute)
             // erase '1' from last round
             Font::Draw(oldChar, 5, -1, 0);
